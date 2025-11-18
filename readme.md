@@ -1,4 +1,4 @@
-#Info
+# Info
 This is a little project of mine to quickly invert the colors a bunch of images at once. The code is messy and not well focused on performance, but it works the way I need to at the moment. Maybe in the future I'll come back and improve it
 # Features
 - Batch invert image colors
