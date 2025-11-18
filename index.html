@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="assets/img/favicon.ico" type="image/x-icon">
+    <title>Batch Color Inverter</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;">
+</head>
+<body>
+    <img src="assets/img/Logo.png" id="logo" alt="Batch Inverter Logo" id="logo">
+    <label id="drop-zone">
+    Drop images here, or click to begin
+    <input type="file" id="file-input" multiple accept="image/*" />
+    </label>
+    <p id="disclaimer">Pictures are not uploaded or saved to any server; all processing is done locally on your device.</p>
+    <div id="preview"></div>
+    <div id="filename-options" style="display:flex;align-items:center;gap:16px;margin-top:10px;">
+      <label id="rename-files-label" class="hidden">
+        <input type="checkbox" id="rename-files-checkbox">
+        Save using sequential filenames (image-1.png, image-2.png, etc.)
+      </label>
+    </div>
+    <div id="customPrefix">
+    <label id="use-custom-prefix-label" class="hidden" style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="use-custom-prefix-checkbox">
+        Use custom prefix for filenames (instead of "image")
+      </label>
+      <label id="custom-fileprefix-label" class="hidden" style="display:flex;align-items:center;gap:8px;">
+        File prefix:
+        <input type="text" id="custom-fileprefix-input" placeholder="image" value="image">
+      </label>
+    </div>
+    <div id="controlButtons" class="hidden">
+        <button id="clear-btn">Clear</button>
+        <button id="download-btn">Download all</button>
+    </div>
+    <div id="image-modal" class="hidden">
+      <div id="modal-content">
+        <span id="close-modal">&times;</span>
+        <button id="prev-canvas" class="modal-nav">&#8249;</button>
+        <canvas id="modal-canvas"></canvas>
+        <button id="next-canvas" class="modal-nav">&#8250;</button>
+      </div>
+    </div>
+    <div id="crop-overlay" class="hidden">
+      <div>
+        <canvas id="crop-canvas"></canvas>
+        <div id="crop-controls">
+          <button id="crop-confirm">Crop/Save</button>
+          <button id="crop-cancel">Cancel</button>
+        </div>
+        <div id="crop-level-controls" style="margin:10px 0 0 0; display:flex; flex-direction:column; gap:8px;">
+          <label style="display:flex;align-items:center;gap:8px;">
+            Blackpoint
+            <input type="range" id="blackpoint-slider" min="0" max="254" value="0" step="1" style="flex:1;">
+            <span id="blackpoint-value" style="min-width:32px;text-align:right;">0</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;">
+            Whitepoint
+            <input type="range" id="whitepoint-slider" min="1" max="255" value="255" step="1" style="flex:1;">
+            <span id="whitepoint-value" style="min-width:32px;text-align:right;">255</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <footer id="footer-credit" style="width:100%;text-align:center;font-size:0.9em;color:#888;margin-top:32px;margin-bottom:8px;">
+      &copy; Made by Scoopdewoo
+    </footer>
+</body>
+  <script src="assets/js/script.js"></script>
+</html>
