@@ -1,5 +1,9 @@
 # Info
 This is a little project of mine to quickly invert the colors a bunch of images at once. The code is messy and not well focused on performance, but it works the way I need to at the moment. Maybe in the future I'll come back and improve it
+# Download & Install
+The latest release can be found in the releases section or be downloaded by clicking [Here](https://github.com/StewyEarth/Batch-Color-inverter/releases/download/Release/batch-color-inverter.zip)
+- Unzip file
+- Run Batch-Color-inverter.exe
 # Features
 - Batch invert image colors
 - Crop images with adjustable selection
