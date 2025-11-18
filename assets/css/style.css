@@ -227,41 +227,39 @@ button.hidden {
   gap: 16px;
   margin-top: 10px;
 }
-#rename-files-label,
-#use-custom-prefix-label {
+#customPrefix {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.95em;
-  color: #222;
-  background: #f8f9fa;
-  border-radius: 6px;
-  padding: 6px 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   margin-top: 0;
-  cursor: pointer;
-  transition: box-shadow 0.2s, background 0.2s;
-    margin: .5em;
 }
-#rename-files-label:hover,
-#use-custom-prefix-label:hover {
-  background: #e2e6ea;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+#crop-level-controls {
+  margin: 10px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-#rename-files-checkbox,
-#use-custom-prefix-checkbox {
-  accent-color: #007bff;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1.2px solid #007bff;
-  transition: border-color 0.2s;
-  margin-right: 6px;
+#crop-level-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-#rename-files-checkbox:focus,
-#use-custom-prefix-checkbox:focus {
-  outline: 2px solid #007bff;
-  outline-offset: 2px;
+#blackpoint-slider,
+#whitepoint-slider {
+  flex: 1;
+}
+#blackpoint-value,
+#whitepoint-value {
+  min-width: 32px;
+  text-align: right;
+}
+#footer-credit {
+  width: 100%;
+  text-align: center;
+  font-size: 0.9em;
+  color: #888;
+  margin-top: 32px;
+  margin-bottom: 8px;
 }
 #custom-fileprefix-label {
   display: flex;
@@ -337,4 +335,18 @@ button.hidden {
     font-size: 0.9em;
     color: #666;
     margin-top: 10px;
+}
+
+#download-progress-container {
+  width: 100%;
+  max-width: 320px;
+  margin: 8px auto 0 auto;
+  display: none;
+}
+#download-progress-bar {
+  height: 16px;
+  width: 0%;
+  background: #007bff;
+  border-radius: 8px;
+  transition: width 0.3s;
 }

@@ -162,7 +162,14 @@ downloadBtn.addEventListener("click", async () => {
     const renameFiles = document.getElementById("rename-files-checkbox").checked;
     const useCustomPrefix = document.getElementById("use-custom-prefix-checkbox").checked;
     const customPrefix = document.getElementById("custom-fileprefix-input").value || "image";
-    document.querySelectorAll(".imagePreview").forEach((canvas, index) => {
+    const canvases = document.querySelectorAll(".imagePreview");
+    const progressContainer = document.getElementById("download-progress-container");
+    const progressBar = document.getElementById("download-progress-bar");
+    progressContainer.style.display = "block";
+    progressBar.style.width = "0%";
+
+    for (let index = 0; index < canvases.length; index++) {
+      const canvas = canvases[index];
       let filename;
       if (renameFiles) {
         filename = useCustomPrefix
@@ -174,9 +181,15 @@ downloadBtn.addEventListener("click", async () => {
       const fullPath = `${filePath}/${filename}`;
       const dataUrl = canvas.toDataURL("image/png");
       const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
-
       window.electronAPI.saveImage(fullPath, base64Data);
-    });
+      // Update progress bar
+      progressBar.style.width = `${Math.round(((index + 1) / canvases.length) * 100)}%`;
+      await new Promise(r => setTimeout(r, 60)); // Simulate progress for UI
+    }
+    setTimeout(() => {
+      progressContainer.style.display = "none";
+      progressBar.style.width = "0%";
+    }, 800);
   }
 });
 
