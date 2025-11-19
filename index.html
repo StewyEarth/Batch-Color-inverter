@@ -10,11 +10,22 @@
 </head>
 <body>
     <img src="assets/img/Logo.png" id="logo" alt="Batch Inverter Logo" id="logo">
+        <div id="backgroundControls">
+      <label id="transparentBackground-label">
+        Use transparent background:
+        <input type="checkbox" id="transparentBackground-checkbox" checked>
+      </label>
+      <label id="bgcolor-label" class="hidden">
+        Background color: 
+        <input type="color" id="bgcolor-picker" value="#000000">
+      </label>
+    </div>
+    <p id="transparency-info" class="disclaimer">(Transparency & background color only works with transparent PNGs)</p>
     <label id="drop-zone">
     Drop images here, or click to begin
     <input type="file" id="file-input" multiple accept="image/*" />
     </label>
-    <p id="disclaimer">Pictures are not uploaded or saved to any server; all processing is done locally on your device.</p>
+    <p id="disclaimer" class="disclaimer">Pictures are not uploaded or saved to any server; all processing is done locally on your device.</p>
     <div id="preview"></div>
     <div id="filename-options">
       <label id="rename-files-label" class="hidden">

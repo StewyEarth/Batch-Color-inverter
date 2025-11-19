@@ -11,11 +11,21 @@ let controlButtons = document.getElementById("controlButtons");
 let disclaimer = document.getElementById("disclaimer");
 let renameFilesLabel = document.getElementById("rename-files-label");
 let currentCanvasIndex = 0;
+const bgcolorpickerlabel = document.getElementById("bgcolor-label");
+const transparentBackgroundCheckbox = document.getElementById("transparentBackground-checkbox");
 let isCropping = false;
 
 window.addEventListener("drop", (e) => {
   if ([...e.dataTransfer.items].some((item) => item.kind === "file")) {
     e.preventDefault();
+  }
+});
+
+transparentBackgroundCheckbox.addEventListener("change", () => {
+  if (transparentBackgroundCheckbox.checked) {
+    bgcolorpickerlabel.classList.add("hidden");
+  } else {
+    bgcolorpickerlabel.classList.remove("hidden");
   }
 });
 
@@ -60,6 +70,7 @@ function invertImageColors(canvas) {
 }
 
 function displayImages(files) {
+  const bgcolorPicker = document.getElementById("bgcolor-picker");
   for (const file of files) {
     if (file.type.startsWith("image/")) {
       const container = document.createElement("div");
@@ -73,6 +84,12 @@ function displayImages(files) {
       img.onload = function () {
         canvas.width = this.width;
         canvas.height = this.height;
+        // If transparent background is UNchecked, fill with color picker value before drawing image
+        if (transparentBackgroundCheckbox && !transparentBackgroundCheckbox.checked && bgcolorPicker) {
+          ctx.fillStyle = bgcolorPicker.value || "#000000";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          invertImageColors(canvas);
+        }
         ctx.drawImage(img, 0, 0);
         invertImageColors(canvas); // Invert colors after drawing the image
         URL.revokeObjectURL(img.src);

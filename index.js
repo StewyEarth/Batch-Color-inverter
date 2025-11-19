@@ -13,9 +13,8 @@ const createWindow = () => {
     ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {})
   })
   
-    win.removeMenu()
-  win.loadFile('index.html')
-//   win.removeMenu()
+    win.removeMenu();
+    win.loadFile('index.html');
 }
 
 app.whenReady().then(() => {
