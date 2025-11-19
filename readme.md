@@ -18,3 +18,4 @@ The latest release can be found in the releases section or be downloaded by clic
 - Preview and navigate images in a modal
 - Modern, responsive UI
 - All processing is local (no uploads)
+- Changing color of background on transparent pngs (on import)
