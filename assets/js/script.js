@@ -69,41 +69,94 @@ function invertImageColors(canvas) {
   ctx.putImageData(imageData, 0, 0);
 }
 
+function createSquareCanvasFromImage(img, bgcolorPicker, transparentCheckbox) {
+  const size = Math.max(img.width, img.height);
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  // Determine background: transparent or color picker
+  if (transparentCheckbox && transparentCheckbox.checked) {
+    ctx.clearRect(0, 0, size, size); // Transparent background
+  } else {
+    ctx.fillStyle = bgcolorPicker ? bgcolorPicker.value : '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    invertImageColors(canvas); // Invert background before drawing image
+  }
+
+  // Center the image
+  const x = (size - img.width) / 2;
+  const y = (size - img.height) / 2;
+  ctx.drawImage(img, x, y);
+
+  return canvas;
+}
+
 function displayImages(files) {
   const bgcolorPicker = document.getElementById("bgcolor-picker");
+  const transparentBackgroundCheckbox = document.getElementById("transparentBackground-checkbox");
+  const squareCanvasCheckbox = document.getElementById("squareCanvas-checkbox");
+  const importProgressContainer = document.getElementById("import-progress-container");
+  const importProgressBar = document.getElementById("import-progress-bar");
+  const preview = document.getElementById("preview");
+  const controlButtons = document.getElementById("controlButtons");
+  const disclaimer = document.getElementById("disclaimer");
+
+  // Hide preview and show progress bar
+  preview.classList.add("hidden");
+  importProgressContainer.style.display = "block";
+  importProgressBar.style.width = "0%";
+
+  let loadedCount = 0;
+  const total = Array.from(files).filter(f => f.type.startsWith("image/")).length;
+  const containers = [];
+
   for (const file of files) {
     if (file.type.startsWith("image/")) {
       const container = document.createElement("div");
       container.className = "canvas-container";
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+      let canvas = document.createElement("canvas");
       canvas.classList.add("imagePreview");
+      const ctx = canvas.getContext("2d");
       const url = URL.createObjectURL(file);
       const img = new Image();
 
       img.onload = function () {
-        canvas.width = this.width;
-        canvas.height = this.height;
-        // If transparent background is UNchecked, fill with color picker value before drawing image
-        if (transparentBackgroundCheckbox && !transparentBackgroundCheckbox.checked && bgcolorPicker) {
-          ctx.fillStyle = bgcolorPicker.value || "#000000";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          invertImageColors(canvas);
+        if (squareCanvasCheckbox && squareCanvasCheckbox.checked) {
+          canvas = createSquareCanvasFromImage(img, bgcolorPicker, transparentBackgroundCheckbox);
+          canvas.classList.add("imagePreview");
+        } else {
+          canvas.width = this.width;
+          canvas.height = this.height;
+          if (transparentBackgroundCheckbox && !transparentBackgroundCheckbox.checked && bgcolorPicker) {
+            ctx.fillStyle = bgcolorPicker.value || "#000000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            invertImageColors(canvas); // Invert background before drawing image
+          }
+          ctx.drawImage(img, 0, 0);
         }
-        ctx.drawImage(img, 0, 0);
+        canvas.dataset.filename = file.name;
+        canvas.dataset.blackpoint = "0";
+        canvas.dataset.whitepoint = "255";
         invertImageColors(canvas); // Invert colors after drawing the image
         URL.revokeObjectURL(img.src);
+        container.appendChild(canvas);
+        loadedCount++;
+        importProgressBar.style.width = ((loadedCount / total) * 100) + "%";
+        containers.push(container);
+        if (loadedCount === total) {
+          // All images loaded, show them at once
+          preview.innerHTML = "";
+          containers.forEach(c => preview.appendChild(c));
+          preview.classList.remove("hidden");
+          importProgressContainer.style.display = "none";
+          controlButtons.classList.remove("hidden");
+          disclaimer.classList.add("hidden");
+          updateFilenameOptionsVisibility(true);
+        }
       };
       img.src = url;
-      canvas.dataset.filename = file.name;
-      canvas.dataset.blackpoint = "0"; // Default blackpoint value
-      canvas.dataset.whitepoint = "255"; // Default whitepoint value
-      container.appendChild(canvas);
       addCropButton(canvas, container);
-      preview.appendChild(container);
-      controlButtons.classList.remove("hidden");
-      disclaimer.classList.add("hidden");
-      updateFilenameOptionsVisibility(true);
     }
   }
 }
