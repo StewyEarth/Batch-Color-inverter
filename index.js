@@ -38,8 +38,13 @@ app.on('window-all-closed', () => {
 ipcMain.handle('upscale-image', async (event, inputPath, outputPath, modelName = 'realesrgan-x4plus') => {
   try {
     return await new Promise((resolve) => {
-      const exePath = path.join(__dirname, 'assets', 'upscaler-bin', 'realesrgan-ncnn-vulkan.exe');
-      const modelDir = path.join(__dirname, 'assets', 'upscaler-bin', 'models');
+      // Handle path resolution for both dev and packaged (production) environments
+      const isPackaged = app.isPackaged;
+      const basePath = isPackaged
+        ? path.join(process.resourcesPath, 'upscaler-bin')
+        : path.join(__dirname, 'upscaler-bin');
+      const exePath = path.join(basePath, 'realesrgan-ncnn-vulkan.exe');
+      const modelDir = path.join(basePath, 'models');
       const args = [
         '-i', inputPath,
         '-o', outputPath,
