@@ -1,3 +1,39 @@
+// Keyboard shortcuts for modals
+document.addEventListener('keydown', (e) => {
+  // ESC closes crop modal and image modal
+  if (e.key === 'Escape') {
+    const cropOverlay = document.getElementById('crop-overlay');
+    const modal = document.getElementById('image-modal');
+    if (cropOverlay && !cropOverlay.classList.contains('hidden')) {
+      cropOverlay.classList.add('hidden');
+    }
+    if (modal && !modal.classList.contains('hidden')) {
+      modal.classList.add('hidden');
+    }
+  }
+  // Arrow keys for image modal navigation
+  const modal = document.getElementById('image-modal');
+  if (modal && !modal.classList.contains('hidden')) {
+    if (e.key === 'ArrowLeft') {
+      updateModalCanvas(currentCanvasIndex - 1);
+      e.preventDefault();
+    } else if (e.key === 'ArrowRight') {
+      updateModalCanvas(currentCanvasIndex + 1);
+      e.preventDefault();
+    }
+  }
+});
+// Open external links in user's default browser
+document.addEventListener('click', function (event) {
+  const target = event.target.closest('a');
+  if (target && target.href && target.href.startsWith('http')) {
+    event.preventDefault();
+    if (window.electronAPI && window.electronAPI.openExternal) {
+      window.electronAPI.openExternal(target.href);
+    }
+  }
+});
+
 const inputElem = document.querySelector("#file-input");
 const dropZone = document.getElementById("drop-zone");
 const preview = document.getElementById("preview");
@@ -14,6 +50,10 @@ let currentCanvasIndex = 0;
 const bgcolorpickerlabel = document.getElementById("bgcolor-label");
 const transparentBackgroundCheckbox = document.getElementById("transparentBackground-checkbox");
 let isCropping = false;
+let cancelUpscaling = false;
+const startProcessingBtn = document.getElementById('start-processing-btn');
+const pendingImageCount = document.getElementById('pending-image-count');
+let pendingFiles = [];
 
 window.addEventListener("drop", (e) => {
   if ([...e.dataTransfer.items].some((item) => item.kind === "file")) {
@@ -122,25 +162,27 @@ function displayImages(files) {
       const img = new Image();
 
       img.onload = function () {
+        let finalCanvas = canvas;
         if (squareCanvasCheckbox && squareCanvasCheckbox.checked) {
-          canvas = createSquareCanvasFromImage(img, bgcolorPicker, transparentBackgroundCheckbox);
-          canvas.classList.add("imagePreview");
+          finalCanvas = createSquareCanvasFromImage(img, bgcolorPicker, transparentBackgroundCheckbox);
+          finalCanvas.classList.add("imagePreview");
         } else {
-          canvas.width = this.width;
-          canvas.height = this.height;
+          finalCanvas.width = this.width;
+          finalCanvas.height = this.height;
           if (transparentBackgroundCheckbox && !transparentBackgroundCheckbox.checked && bgcolorPicker) {
             ctx.fillStyle = bgcolorPicker.value || "#000000";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            invertImageColors(canvas); // Invert background before drawing image
+            ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+            invertImageColors(finalCanvas); // Invert background before drawing image
           }
-          ctx.drawImage(img, 0, 0);
+          finalCanvas.getContext("2d").drawImage(img, 0, 0);
         }
-        canvas.dataset.filename = file.name;
-        canvas.dataset.blackpoint = "0";
-        canvas.dataset.whitepoint = "255";
-        invertImageColors(canvas); // Invert colors after drawing the image
+        finalCanvas.dataset.filename = file.name;
+        finalCanvas.dataset.blackpoint = "0";
+        finalCanvas.dataset.whitepoint = "255";
+        invertImageColors(finalCanvas); // Invert colors after drawing the image
         URL.revokeObjectURL(img.src);
-        container.appendChild(canvas);
+        container.appendChild(finalCanvas);
+        addCropButton(finalCanvas, container);
         loadedCount++;
         importProgressBar.style.width = ((loadedCount / total) * 100) + "%";
         containers.push(container);
@@ -156,7 +198,6 @@ function displayImages(files) {
         }
       };
       img.src = url;
-      addCropButton(canvas, container);
     }
   }
 }
@@ -196,33 +237,77 @@ function dropHandler(ev) {
   displayImages(files);
 }
 
-dropZone.addEventListener("drop", dropHandler);
 
-inputElem.addEventListener("change", (e)=>{
-    displayImages(e.target.files);
+// Override drop and file input to store files, not process immediately
+function updatePendingImageCount() {
+  if (!pendingImageCount) return;
+  if (pendingFiles.length === 0) {
+    pendingImageCount.textContent = 'No images selected';
+    startProcessingBtn.classList.add('hidden');
+  } else if (pendingFiles.length === 1) {
+    pendingImageCount.textContent = '1 image selected';
+    startProcessingBtn.classList.remove('hidden');
+  } else {
+    pendingImageCount.textContent = pendingFiles.length + ' images selected';
+    startProcessingBtn.classList.remove('hidden');
+  }
+}
+
+function handleFilesForProcessing(files) {
+  pendingFiles = Array.from(files);
+  updatePendingImageCount();
+}
+
+dropZone.addEventListener("drop", (ev) => {
+  ev.preventDefault();
+  const files = [...ev.dataTransfer.items]
+    .map((item) => item.getAsFile())
+    .filter((file) => file);
+  handleFilesForProcessing(files);
 });
+
+inputElem.addEventListener("change", (e) => {
+  handleFilesForProcessing(e.target.files);
+});
+
+if (startProcessingBtn) {
+  startProcessingBtn.addEventListener('click', () => {
+    if (pendingFiles.length === 0) {
+      alert('Please add images before starting processing.');
+      return;
+    }
+    startProcessingBtn.classList.add('hidden');
+    displayImages(pendingFiles);
+    pendingFiles = [];
+    updatePendingImageCount();
+  });
+}
 
 
 clearBtn.addEventListener("click", () => {
-    if (!confirm("Are you sure you want to clear all images?")) {
-        return;
-    }
-    document.querySelectorAll(".canvas-container").forEach((canvas) => {
-        canvas.remove();
-    },);
-    document.querySelectorAll(".crop-btn").forEach((btn) => {
-        btn.remove();
-    });
-    controlButtons.classList.add("hidden");
-    disclaimer.classList.remove("hidden");
-    renameFilesLabel.classList.add("hidden");
-    fileInput.value = "";
-    updateFilenameOptionsVisibility(false);
-    // Reset checkboxes and hide custom prefix
-    renameFilesCheckbox.checked = false;
-    useCustomPrefixCheckbox.checked = false;
-    document.getElementById("custom-fileprefix-label").classList.add("hidden");
-    document.getElementById("use-custom-prefix-label").classList.add("hidden");
+  // Cancel any ongoing upscaling
+  cancelUpscaling = true;
+  if (!confirm("Are you sure you want to clear all images?")) {
+    return;
+  }
+  document.querySelectorAll(".canvas-container").forEach((canvas) => {
+    canvas.remove();
+  });
+  document.querySelectorAll(".crop-btn").forEach((btn) => {
+    btn.remove();
+  });
+  controlButtons.classList.add("hidden");
+  disclaimer.classList.remove("hidden");
+  renameFilesLabel.classList.add("hidden");
+  fileInput.value = "";
+  pendingFiles = [];
+  updatePendingImageCount();
+  updateFilenameOptionsVisibility(false);
+  // Reset checkboxes and hide custom prefix
+  renameFilesCheckbox.checked = false;
+  useCustomPrefixCheckbox.checked = false;
+  document.getElementById("custom-fileprefix-label").classList.add("hidden");
+  document.getElementById("use-custom-prefix-label").classList.add("hidden");
 });
 
 downloadBtn.addEventListener("click", async () => {
@@ -263,50 +348,6 @@ downloadBtn.addEventListener("click", async () => {
   }
 });
 
-// Show modal with larger canvas view
-preview.addEventListener("click", (e) => {
-  if (e.target.tagName === "CANVAS") {
-    const canvases = Array.from(document.querySelectorAll(".imagePreview"));
-    currentCanvasIndex = canvases.indexOf(e.target);
-    updateModalCanvas(currentCanvasIndex);
-    modal.classList.remove("hidden");
-  }
-});
-
-function updateModalCanvas(index) {
-  const canvases = document.querySelectorAll(".imagePreview");
-  if (index >= 0 && index < canvases.length) {
-    const canvas = canvases[index];
-    const ctx = modalCanvas.getContext("2d");
-
-    modalCanvas.width = canvas.width;
-    modalCanvas.height = canvas.height;
-    ctx.drawImage(canvas, 0, 0);
-
-    currentCanvasIndex = index;
-  }
-}
-
-document.getElementById("prev-canvas").addEventListener("click", () => {
-  updateModalCanvas(currentCanvasIndex - 1);
-});
-
-document.getElementById("next-canvas").addEventListener("click", () => {
-  updateModalCanvas(currentCanvasIndex + 1);
-});
-
-// Close modal
-closeModal.addEventListener("click", () => {
-  modal.classList.add("hidden");
-});
-
-// Close modal when clicking outside the content
-modal.addEventListener("click", (e) => {
-  if (e.target === modal) {
-    modal.classList.add("hidden");
-  }
-});
-
 // --- Crop Functionality ---
 let cropTargetCanvas = null;
 let cropStart = null;
@@ -320,13 +361,18 @@ const blackpointSlider = document.getElementById("blackpoint-slider");
 const whitepointSlider = document.getElementById("whitepoint-slider");
 const blackpointValue = document.getElementById("blackpoint-value");
 const whitepointValue = document.getElementById("whitepoint-value");
+const cropUpscaleBtn = document.getElementById('crop-upscale');
+cropOverlayProgress = document.createElement('div');
+cropOverlayProgress.id = 'crop-overlay-progress';
+cropOverlayProgress.style.cssText = 'text-align:center;margin:0.5em 0;color:#4a90e2;font-weight:500;display:none;';
+document.getElementById('crop-controls').appendChild(cropOverlayProgress);
 
 function addCropButton(canvas, container) {
   const btn = document.createElement("button");
   btn.className = "crop-btn";
   const icon = document.createElement("img");
-  icon.src = "assets/img/crop-icon.svg";
-  icon.alt = "Crop";
+  icon.src = "assets/img/edit-icon.svg";
+  icon.alt = "Edit";
   icon.style.width = "22px";
   icon.style.height = "22px";
   btn.appendChild(icon);
@@ -345,13 +391,30 @@ function openCropOverlay(canvas) {
   cropCanvas.width = canvas.width;
   cropCanvas.height = canvas.height;
   const ctx = cropCanvas.getContext("2d");
-  ctx.drawImage(canvas, 0, 0);
-
-  // Update sliders to reflect the canvas's blackpoint and whitepoint
+  // Debug: log canvas dimensions and check for blank
+  console.log("[Crop Modal] Source canvas size:", canvas.width, canvas.height);
+  // Force clear and redraw
+  ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+  ctx.drawImage(canvas, 0, 0, cropCanvas.width, cropCanvas.height);
+  // If still blank, try to get image data and log
+  try {
+    const testData = ctx.getImageData(0, 0, cropCanvas.width, cropCanvas.height);
+    const allZero = testData.data.every(v => v === 0);
+    if (allZero) {
+      console.warn("[Crop Modal] Crop canvas appears blank after drawImage.");
+    }
+  } catch (e) {
+    console.error("[Crop Modal] Error reading crop canvas image data:", e);
+  }
   blackpointSlider.value = canvas.dataset.blackpoint || "0";
   whitepointSlider.value = canvas.dataset.whitepoint || "255";
   blackpointValue.textContent = blackpointSlider.value;
   whitepointValue.textContent = whitepointSlider.value;
+  // Update crop modal resolution display
+  const cropRes = document.getElementById('crop-resolution');
+  if (cropRes) {
+    cropRes.textContent = `Resolution: ${cropCanvas.width} x ${cropCanvas.height}`;
+  }
 }
 
 cropCanvas.addEventListener("mousedown", (e) => {
@@ -363,7 +426,6 @@ cropCanvas.addEventListener("mousedown", (e) => {
   cropEnd = { ...cropStart }; // Initialize cropEnd to the same point as cropStart
   isCropping = true;
 });
-
 cropCanvas.addEventListener("mousemove", (e) => {
   if (!isCropping || !cropStart) return;
   const rect = cropCanvas.getBoundingClientRect();
@@ -380,6 +442,11 @@ cropCanvas.addEventListener("mouseup", () => {
     isCropping = false;
     if (cropStart && cropEnd) {
       drawCropRect();
+    }
+    // Update crop modal resolution display after crop
+    const cropRes = document.getElementById('crop-resolution');
+    if (cropRes) {
+      cropRes.textContent = `Resolution: ${cropCanvas.width} x ${cropCanvas.height}`;
     }
   }
 });
@@ -485,12 +552,227 @@ cropConfirm.addEventListener("click", () => {
     }
   }
 
+  // --- Always update main canvas with crop overlay ---
+  cropTargetCanvas.width = cropCanvas.width;
+  cropTargetCanvas.height = cropCanvas.height;
+  cropTargetCanvas.getContext("2d").clearRect(0, 0, cropTargetCanvas.width, cropTargetCanvas.height);
+  cropTargetCanvas.getContext("2d").drawImage(cropCanvas, 0, 0);
+  // Add AI tag only if upscaled in crop modal
+  if (
+    cropTargetCanvas &&
+    cropTargetCanvas.parentElement &&
+    cropCanvas.width > 0 &&
+    cropCanvas.height > 0 &&
+    cropCanvas.dataset.aiUpscaled === 'true'
+  ) {
+    // Only add if not already present
+    if (!cropTargetCanvas.parentElement.querySelector('.ai-tag')) {
+      const aiTag = document.createElement('div');
+      aiTag.className = 'ai-tag';
+      aiTag.textContent = 'AI';
+      cropTargetCanvas.parentElement.appendChild(aiTag);
+    }
+    // Reset flag so tag is not added again unless upscaled again
+    delete cropCanvas.dataset.aiUpscaled;
+  }
   cropOverlay.classList.add("hidden");
 });
 
 cropCancel.addEventListener("click", () => {
   cropOverlay.classList.add("hidden");
+  cropCanvas.dataset.aiUpscaled = 'false';
 });
+
+if (cropUpscaleBtn) {
+  cropUpscaleBtn.addEventListener('click', async () => {
+    cropUpscaleBtn.disabled = true;
+    cropUpscaleBtn.classList.add('btn-disabled');
+    cropOverlayProgress.textContent = 'Upscaling...';
+    cropOverlayProgress.classList.remove('hidden');
+    cropOverlayProgress.classList.remove('crop-overlay-progress-success', 'crop-overlay-progress-error');
+    cropOverlayProgress.classList.add('crop-overlay-progress-active');
+    try {
+      // Save cropCanvas to temp file
+      const tempInput = await window.electronAPI.getTempFilePath('crop_upscale_input.png');
+      const tempOutput = await window.electronAPI.getTempFilePath('crop_upscale_output.png');
+      const dataUrl = cropCanvas.toDataURL('image/png');
+      const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+      await window.electronAPI.saveImage(tempInput, base64Data);
+      const result = await window.electronAPI.upscaleImage(tempInput, tempOutput, 'realesrgan-x4plus');
+      if (result.success) {
+        await new Promise((resolve, reject) => {
+          const upscaledImg = new window.Image();
+          upscaledImg.onload = function() {
+            cropCanvas.width = upscaledImg.width;
+            cropCanvas.height = upscaledImg.height;
+            const ctx = cropCanvas.getContext('2d');
+            ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+            ctx.drawImage(upscaledImg, 0, 0);
+            resolve();
+          };
+          upscaledImg.onerror = reject;
+          upscaledImg.src = 'file://' + result.outputPath + '?t=' + Date.now();
+        });
+        cropOverlayProgress.textContent = 'Upscale complete!';
+        cropOverlayProgress.classList.remove('crop-overlay-progress-active');
+        cropOverlayProgress.classList.add('crop-overlay-progress-success');
+        cropCanvas.dataset.aiUpscaled = 'true';
+        // Update crop modal resolution display after upscaling
+        const cropRes = document.getElementById('crop-resolution');
+        if (cropRes) {
+          cropRes.textContent = `Resolution: ${cropCanvas.width} x ${cropCanvas.height}`;
+        }
+      } else {
+        cropOverlayProgress.textContent = 'Upscaling failed: ' + result.error;
+        cropOverlayProgress.classList.remove('crop-overlay-progress-active');
+        cropOverlayProgress.classList.add('crop-overlay-progress-error');
+      }
+      await window.electronAPI.deleteTempFile(tempInput);
+      await window.electronAPI.deleteTempFile(tempOutput);
+    } finally {
+      setTimeout(() => {
+        cropOverlayProgress.classList.add('hidden');
+        cropUpscaleBtn.disabled = false;
+        cropUpscaleBtn.classList.remove('btn-disabled');
+      }, 1200);
+    }
+  });
+}
+
+
+
+// --- End Crop Functionality ---
+
+// --- Modal Functionality ---
+preview.addEventListener("click", (e) => {
+  if (e.target.tagName === "CANVAS") {
+    const canvases = Array.from(document.querySelectorAll(".imagePreview"));
+    currentCanvasIndex = canvases.indexOf(e.target);
+    updateModalCanvas(currentCanvasIndex);
+    modal.classList.remove("hidden");
+  }
+});
+function updateModalCanvas(index) {
+  const canvases = document.querySelectorAll(".imagePreview");
+  if (index >= 0 && index < canvases.length) {
+    const canvas = canvases[index];
+    const ctx = modalCanvas.getContext("2d");
+    modalCanvas.width = canvas.width;
+    modalCanvas.height = canvas.height;
+    ctx.drawImage(canvas, 0, 0);
+    currentCanvasIndex = index;
+    // Update modal resolution display
+    const modalRes = document.getElementById('modal-resolution');
+    if (modalRes) {
+      modalRes.textContent = `${canvas.width} x ${canvas.height}`;
+    }
+  }
+}
+
+document.getElementById("prev-canvas").addEventListener("click", () => {
+  updateModalCanvas(currentCanvasIndex - 1);
+});
+
+document.getElementById("next-canvas").addEventListener("click", () => {
+  updateModalCanvas(currentCanvasIndex + 1);
+});
+
+// Close modal
+closeModal.addEventListener("click", () => {
+  modal.classList.add("hidden");
+});
+
+// Close modal when clicking outside the content
+modal.addEventListener("click", (e) => {
+  if (e.target === modal) {
+    modal.classList.add("hidden");
+  }
+});
+
+// --- AI Upscale Functionality ---
+const upscaleBtn = document.getElementById('upscale-btn');
+const aiUpscaleProgressContainer = document.getElementById('ai-upscale-progress-container');
+const aiUpscaleProgressBar = document.getElementById('ai-upscale-progress-bar');
+const aiUpscaleProgressText = document.getElementById('ai-upscale-progress-text');
+if (upscaleBtn) {
+  upscaleBtn.addEventListener('click', async () => {
+    const canvases = document.querySelectorAll('.imagePreview');
+    if (!canvases.length) {
+      alert('No images to upscale!');
+      return;
+    }
+    cancelUpscaling = false;
+    aiUpscaleProgressContainer.classList.remove('hidden');
+    aiUpscaleProgressBar.style.width = '0%';
+    let startTime = Date.now();
+        let currentIndex = 0; // Initialize currentIndex
+    let intervalId = null;
+    if (aiUpscaleProgressText) {
+      aiUpscaleProgressText.classList.remove('hidden');
+          aiUpscaleProgressText.textContent = `Upscaling 0/${canvases.length} (0s)`; // Show initial progress
+      // Start timer to update elapsed time every second
+      intervalId = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        aiUpscaleProgressText.textContent = `Upscaling ${currentIndex}/${canvases.length} (${elapsed}s)`;
+      }, 1000);
+    }
+    for (let i = 0; i < canvases.length; i++) {
+          // Only increment currentIndex after successful upscale
+      if (cancelUpscaling) {
+        if (aiUpscaleProgressText) aiUpscaleProgressText.textContent = 'Upscaling cancelled.';
+        break;
+      }
+      const canvas = canvases[i];
+      const container = canvas.parentElement;
+      const tempInput = await window.electronAPI.getTempFilePath('upscale_input_' + i + '.png');
+      const tempOutput = await window.electronAPI.getTempFilePath('upscale_output_' + i + '.png');
+      const dataUrl = canvas.toDataURL('image/png');
+      const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+      await window.electronAPI.saveImage(tempInput, base64Data);
+      const result = await window.electronAPI.upscaleImage(tempInput, tempOutput, 'realesrgan-x4plus');
+      if (result.success) {
+        await new Promise((resolve, reject) => {
+          const upscaledImg = new window.Image();
+          upscaledImg.onload = function() {
+            canvas.width = upscaledImg.width;
+            canvas.height = upscaledImg.height;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(upscaledImg, 0, 0);
+            resolve();
+          };
+          upscaledImg.onerror = reject;
+          upscaledImg.src = 'file://' + result.outputPath + '?t=' + Date.now();
+        });
+            currentIndex++; // Increment currentIndex after successful upscale
+        if (container && !container.querySelector('.ai-tag')) {
+          const aiTag = document.createElement('div');
+          aiTag.className = 'ai-tag';
+          aiTag.textContent = 'AI';
+          container.appendChild(aiTag);
+        }
+      } else {
+        alert('Upscaling failed for image ' + (i+1) + ': ' + result.error);
+      }
+      await window.electronAPI.deleteTempFile(tempInput);
+      await window.electronAPI.deleteTempFile(tempOutput);
+      aiUpscaleProgressBar.style.width = ((i + 1) / canvases.length * 100) + '%';
+      if (aiUpscaleProgressText) {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            aiUpscaleProgressText.textContent = `Upscaling ${currentIndex}/${canvases.length} (${elapsed}s)`; // Update progress
+      }
+    }
+    if (intervalId) clearInterval(intervalId);
+    setTimeout(() => {
+      aiUpscaleProgressContainer.classList.add('hidden');
+      aiUpscaleProgressBar.style.width = '0%';
+      if (aiUpscaleProgressText) {
+        aiUpscaleProgressText.classList.add('hidden');
+        aiUpscaleProgressText.textContent = '';
+      }
+    }, 1200);
+  });
+}
 
 // --- End Crop Functionality ---
 

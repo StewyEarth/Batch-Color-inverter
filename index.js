@@ -1,6 +1,13 @@
-const { app, BrowserWindow, session, dialog, ipcMain } = require('electron')
+const { shell } = require('electron');
+const { app, BrowserWindow, session, dialog, ipcMain } = require('electron');
+const os = require('os');
 const path = require('node:path');
 const fs = require('fs');
+const { execFile } = require('child_process');
+// Expose temp file path logic to renderer via IPC
+ipcMain.handle('get-temp-file-path', (event, filename) => {
+  return path.join(os.tmpdir(), filename);
+});
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 1000,
@@ -27,6 +34,31 @@ app.on('window-all-closed', () => {
 }
 })
 
+// AI Upscale handler
+ipcMain.handle('upscale-image', async (event, inputPath, outputPath, modelName = 'realesrgan-x4plus') => {
+  try {
+    return await new Promise((resolve) => {
+      const exePath = path.join(__dirname, 'assets', 'upscaler-bin', 'realesrgan-ncnn-vulkan.exe');
+      const modelDir = path.join(__dirname, 'assets', 'upscaler-bin', 'models');
+      const args = [
+        '-i', inputPath,
+        '-o', outputPath,
+        '-n', modelName,
+        '-m', modelDir
+      ];
+      execFile(exePath, args, (error, stdout, stderr) => {
+        if (error) {
+          resolve({ success: false, error: stderr ? String(stderr) : String(error) });
+        } else {
+          resolve({ success: true, outputPath: String(outputPath) });
+        }
+      });
+    });
+  } catch (err) {
+    return { success: false, error: String(err) };
+  }
+});
+
 ipcMain.handle("select-directory", async () => {
   const result = await dialog.showOpenDialog({
     properties: ["openDirectory"]
@@ -46,5 +78,28 @@ ipcMain.handle("save-image", async (event, filePath, base64Data) => {
   } catch (error) {
     console.error("Failed to save image:", error);
     return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('delete-temp-file', async (event, filePath) => {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      return { success: true };
+    } else {
+      return { success: false, error: 'File does not exist' };
+    }
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
+});
+
+// Open external links in user's default browser
+ipcMain.handle('open-external', async (event, url) => {
+  try {
+    await shell.openExternal(url);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: String(error) };
   }
 });

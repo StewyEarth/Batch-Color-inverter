@@ -29,6 +29,8 @@
     Drop images here, or click to begin
     <input type="file" id="file-input" multiple accept="image/*" />
     </label>
+    <div id="pending-image-count" class="disclaimer">No images selected</div>
+    <button id="start-processing-btn" class="hidden">Start Processing</button>
     <p id="disclaimer" class="disclaimer">Pictures are not uploaded or saved to any server; all processing is done locally on your device.</p>
     <div id="preview"></div>
     <div id="import-progress-container" style="display:none;">
@@ -53,24 +55,32 @@
     <div id="controlButtons" class="hidden">
         <button id="clear-btn">Clear</button>
         <button id="download-btn">Download all</button>
+        <button id="upscale-btn">AI Upscale All</button>
         <div id="download-progress-container">
           <div id="download-progress-bar"></div>
+        </div>
+        <div id="ai-upscale-progress-text" class="hidden">Upscaling 0/0</div>
+        <div id="ai-upscale-progress-container" class="hidden">
+          <div id="ai-upscale-progress-bar"></div>
         </div>
     </div>
     <div id="image-modal" class="hidden">
       <div id="modal-content">
         <span id="close-modal">&times;</span>
         <button id="prev-canvas" class="modal-nav">&#8249;</button>
+        <div id="modal-resolution" class="modal-resolution"></div>
         <canvas id="modal-canvas"></canvas>
         <button id="next-canvas" class="modal-nav">&#8250;</button>
       </div>
     </div>
     <div id="crop-overlay" class="hidden">
       <div>
+        <div id="crop-resolution" class="crop-resolution">Resolution: </div>
         <canvas id="crop-canvas"></canvas>
         <div id="crop-controls">
           <button id="crop-confirm">Crop/Save</button>
           <button id="crop-cancel">Cancel</button>
+          <button id="crop-upscale">AI Upscale (4x res)</button>
         </div>
         <div id="crop-level-controls">
           <label>
@@ -87,7 +97,7 @@
       </div>
     </div>
     <footer id="footer-credit">
-      &copy; Made by Scoopdewoo
+      &copy; Made by Scoopdewoo. AI upscaling using <a href="https://github.com/xinntao/Real-ESRGAN" class="modern-link">Real-ESGAN</a>
     </footer>
 </body>
   <script src="assets/js/script.js"></script>
