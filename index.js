@@ -20,7 +20,7 @@ const createWindow = () => {
     ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {})
   })
   
-    win.removeMenu();
+    win.removeMenu(); // HIDE MENU BAR
     win.loadFile('index.html');
 }
 

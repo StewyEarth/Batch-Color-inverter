@@ -1,9 +1,37 @@
 // Keyboard shortcuts for modals
+const inputElem = document.querySelector("#file-input");
+const dropZone = document.getElementById("drop-zone");
+const preview = document.getElementById("preview");
+const clearBtn = document.getElementById("clear-btn");
+const downloadBtn = document.getElementById("download-btn");
+const fileInput = document.getElementById("file-input");
+const modalCanvas = document.getElementById("modal-canvas");
+const closeModal = document.getElementById("close-modal");
+let controlButtons = document.getElementById("controlButtons");
+let disclaimer = document.getElementById("disclaimer");
+let renameFilesLabel = document.getElementById("rename-files-label");
+let currentCanvasIndex = 0;
+const bgcolorpickerlabel = document.getElementById("bgcolor-label");
+const transparentBackgroundCheckbox = document.getElementById("transparentBackground-checkbox");
+let isCropping = false;
+let cancelUpscaling = false;
+const cropOverlay = document.getElementById("crop-overlay");
+const cropCanvas = document.getElementById("crop-canvas");
+const cropConfirm = document.getElementById("crop-confirm");
+const cropCancel = document.getElementById("crop-cancel");
+const blackpointSlider = document.getElementById("blackpoint-slider");
+const whitepointSlider = document.getElementById("whitepoint-slider");
+const blackpointValue = document.getElementById("blackpoint-value");
+const whitepointValue = document.getElementById("whitepoint-value");
+const cropUpscaleBtn = document.getElementById('crop-upscale');
+const startProcessingBtn = document.getElementById('start-processing-btn');
+const pendingImageCount = document.getElementById('pending-image-count');
+let pendingFiles = [];
+const modal = document.getElementById('image-modal');
 document.addEventListener('keydown', (e) => {
   // ESC closes crop modal and image modal
   if (e.key === 'Escape') {
-    const cropOverlay = document.getElementById('crop-overlay');
-    const modal = document.getElementById('image-modal');
+
     if (cropOverlay && !cropOverlay.classList.contains('hidden')) {
       cropOverlay.classList.add('hidden');
     }
@@ -12,7 +40,6 @@ document.addEventListener('keydown', (e) => {
     }
   }
   // Arrow keys for image modal navigation
-  const modal = document.getElementById('image-modal');
   if (modal && !modal.classList.contains('hidden')) {
     if (e.key === 'ArrowLeft') {
       updateModalCanvas(currentCanvasIndex - 1);
@@ -23,6 +50,7 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
+
 // Open external links in user's default browser
 document.addEventListener('click', function (event) {
   const target = event.target.closest('a');
@@ -34,26 +62,6 @@ document.addEventListener('click', function (event) {
   }
 });
 
-const inputElem = document.querySelector("#file-input");
-const dropZone = document.getElementById("drop-zone");
-const preview = document.getElementById("preview");
-const clearBtn = document.getElementById("clear-btn");
-const downloadBtn = document.getElementById("download-btn");
-const fileInput = document.getElementById("file-input");
-const modal = document.getElementById("image-modal");
-const modalCanvas = document.getElementById("modal-canvas");
-const closeModal = document.getElementById("close-modal");
-let controlButtons = document.getElementById("controlButtons");
-let disclaimer = document.getElementById("disclaimer");
-let renameFilesLabel = document.getElementById("rename-files-label");
-let currentCanvasIndex = 0;
-const bgcolorpickerlabel = document.getElementById("bgcolor-label");
-const transparentBackgroundCheckbox = document.getElementById("transparentBackground-checkbox");
-let isCropping = false;
-let cancelUpscaling = false;
-const startProcessingBtn = document.getElementById('start-processing-btn');
-const pendingImageCount = document.getElementById('pending-image-count');
-let pendingFiles = [];
 
 window.addEventListener("drop", (e) => {
   if ([...e.dataTransfer.items].some((item) => item.kind === "file")) {
@@ -68,6 +76,7 @@ transparentBackgroundCheckbox.addEventListener("change", () => {
     bgcolorpickerlabel.classList.remove("hidden");
   }
 });
+
 
 dropZone.addEventListener("dragover", (e) => {
   const fileItems = [...e.dataTransfer.items].filter(
@@ -359,15 +368,6 @@ let cropTargetCanvas = null;
 let cropStart = null;
 let cropEnd = null;
 
-const cropOverlay = document.getElementById("crop-overlay");
-const cropCanvas = document.getElementById("crop-canvas");
-const cropConfirm = document.getElementById("crop-confirm");
-const cropCancel = document.getElementById("crop-cancel");
-const blackpointSlider = document.getElementById("blackpoint-slider");
-const whitepointSlider = document.getElementById("whitepoint-slider");
-const blackpointValue = document.getElementById("blackpoint-value");
-const whitepointValue = document.getElementById("whitepoint-value");
-const cropUpscaleBtn = document.getElementById('crop-upscale');
 cropOverlayProgress = document.createElement('div');
 cropOverlayProgress.id = 'crop-overlay-progress';
 cropOverlayProgress.style.cssText = 'text-align:center;margin:0.5em 0;color:#4a90e2;font-weight:500;display:none;';
