@@ -9,12 +9,16 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;">
 </head>
 <body>
-    <img src="assets/img/Logo.png" id="logo" alt="Batch Inverter Logo" id="logo">
+    <img src="assets/img/Logo.png" id="logo" alt="Batch Inverter Logo">
         <div id="backgroundControls">
         <label id="squareCanvas-label">
         Make images square
         <input type="checkbox" id="squareCanvas-checkbox">
       </label>
+          <label id="invertColors-label">
+              Invert colors
+              <input type="checkbox" id="invertColors-checkbox" checked>
+          </label>
       <label id="transparentBackground-label">
         Use transparent background:
         <input type="checkbox" id="transparentBackground-checkbox" checked>
@@ -53,7 +57,7 @@
       </label>
     </div>
     <div id="controlButtons" class="hidden">
-        <button id="clear-btn">Clear</button>
+        <button id="clear-btn">Clear/Reset</button>
         <button id="download-btn">Download all</button>
         <button id="upscale-btn">AI Upscale All</button>
         <div id="download-progress-container">

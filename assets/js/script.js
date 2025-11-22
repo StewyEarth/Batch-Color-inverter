@@ -99,36 +99,33 @@ function invertImageColors(canvas) {
   const ctx = canvas.getContext("2d");
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
-
   for (let i = 0; i < data.length; i += 4) {
     data[i] = 255 - data[i];       // Invert Red
     data[i + 1] = 255 - data[i + 1]; // Invert Green
     data[i + 2] = 255 - data[i + 2]; // Invert Blue
   }
-
   ctx.putImageData(imageData, 0, 0);
 }
 
-function createSquareCanvasFromImage(img, bgcolorPicker, transparentCheckbox) {
+function createSquareCanvasFromImage(img, bgcolorPicker, transparentCheckbox, invertCheckbox) {
   const size = Math.max(img.width, img.height);
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d');
-
   // Determine background: transparent or color picker
   if (transparentCheckbox && transparentCheckbox.checked) {
     ctx.clearRect(0, 0, size, size); // Transparent background
   } else {
     ctx.fillStyle = bgcolorPicker ? bgcolorPicker.value : '#ffffff';
     ctx.fillRect(0, 0, size, size);
-    invertImageColors(canvas); // Invert background before drawing image
+    if (invertCheckbox && invertCheckbox.checked) {
+      invertImageColors(canvas); // Invert background before drawing image
+    }
   }
-
   // Center the image
   const x = (size - img.width) / 2;
   const y = (size - img.height) / 2;
   ctx.drawImage(img, x, y);
-
   return canvas;
 }
 
@@ -136,6 +133,7 @@ function displayImages(files) {
   const bgcolorPicker = document.getElementById("bgcolor-picker");
   const transparentBackgroundCheckbox = document.getElementById("transparentBackground-checkbox");
   const squareCanvasCheckbox = document.getElementById("squareCanvas-checkbox");
+  const invertColorsCheckbox = document.getElementById("invertColors-checkbox");
   const importProgressContainer = document.getElementById("import-progress-container");
   const importProgressBar = document.getElementById("import-progress-bar");
   const preview = document.getElementById("preview");
@@ -164,7 +162,7 @@ function displayImages(files) {
       img.onload = function () {
         let finalCanvas = canvas;
         if (squareCanvasCheckbox && squareCanvasCheckbox.checked) {
-          finalCanvas = createSquareCanvasFromImage(img, bgcolorPicker, transparentBackgroundCheckbox);
+          finalCanvas = createSquareCanvasFromImage(img, bgcolorPicker, transparentBackgroundCheckbox, invertColorsCheckbox);
           finalCanvas.classList.add("imagePreview");
         } else {
           finalCanvas.width = this.width;
@@ -172,14 +170,18 @@ function displayImages(files) {
           if (transparentBackgroundCheckbox && !transparentBackgroundCheckbox.checked && bgcolorPicker) {
             ctx.fillStyle = bgcolorPicker.value || "#000000";
             ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-            invertImageColors(finalCanvas); // Invert background before drawing image
+            if (invertColorsCheckbox && invertColorsCheckbox.checked) {
+              invertImageColors(finalCanvas); // Invert background before drawing image
+            }
           }
           finalCanvas.getContext("2d").drawImage(img, 0, 0);
         }
         finalCanvas.dataset.filename = file.name;
         finalCanvas.dataset.blackpoint = "0";
         finalCanvas.dataset.whitepoint = "255";
-        invertImageColors(finalCanvas); // Invert colors after drawing the image
+        if (invertColorsCheckbox && invertColorsCheckbox.checked) {
+          invertImageColors(finalCanvas); // Invert colors after drawing the image
+        }
         URL.revokeObjectURL(img.src);
         container.appendChild(finalCanvas);
         addCropButton(finalCanvas, container);
@@ -277,6 +279,8 @@ if (startProcessingBtn) {
       return;
     }
     startProcessingBtn.classList.add('hidden');
+    dropZone.classList.add('hidden'); // Hide drop zone during processing to prevent new inputs
+    pendingImageCount.classList.add('hidden'); // Hide pending images text
     displayImages(pendingFiles);
     pendingFiles = [];
     updatePendingImageCount();
@@ -299,6 +303,8 @@ clearBtn.addEventListener("click", () => {
   controlButtons.classList.add("hidden");
   disclaimer.classList.remove("hidden");
   renameFilesLabel.classList.add("hidden");
+  dropZone.classList.remove("hidden"); // Show drop zone again
+  pendingImageCount.classList.remove("hidden"); // Show pending images text again
   fileInput.value = "";
   pendingFiles = [];
   updatePendingImageCount();
@@ -383,8 +389,9 @@ function addCropButton(canvas, container) {
   container.appendChild(btn);
 }
 
-function openCropOverlay(canvas) {
+function openCropOverlay(canvas, previewCanvasToUpdate) {
   cropTargetCanvas = canvas;
+  cropTargetCanvas._previewCanvasToUpdate = previewCanvasToUpdate || canvas;
   cropStart = null;
   cropEnd = null;
   cropOverlay.classList.remove("hidden");
@@ -480,18 +487,26 @@ function drawCropRect() {
     }
     ctx.putImageData(imageData, 0, 0);
   }
-  // Draw crop rectangle
+  // Draw crop rectangle as a guide only (not part of saved image)
   if (cropStart && cropEnd) {
+    // Dynamic line width based on canvas size
+    const minDim = Math.min(cropCanvas.width, cropCanvas.height);
+    let lineWidth = 2;
+    if (minDim > 1200) lineWidth = 6;
+    else if (minDim > 800) lineWidth = 4;
+    else if (minDim > 400) lineWidth = 3;
+    ctx.save();
     ctx.strokeStyle = "#007bff";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6]);
-    ctx.strokeRect(
-      Math.min(cropStart.x, cropEnd.x) * scale,
-      Math.min(cropStart.y, cropEnd.y) * scale,
-      Math.abs(cropEnd.x - cropStart.x) * scale,
-      Math.abs(cropEnd.y - cropStart.y) * scale
-    );
+    ctx.lineWidth = lineWidth;
+    ctx.setLineDash([Math.max(6, lineWidth * 2)]);
+    const x = Math.min(cropStart.x, cropEnd.x) * scale;
+    const y = Math.min(cropStart.y, cropEnd.y) * scale;
+    const w = Math.abs(cropEnd.x - cropStart.x) * scale;
+    const h = Math.abs(cropEnd.y - cropStart.y) * scale;
+    // Only draw a border (no fill)
+    ctx.strokeRect(x, y, w, h);
     ctx.setLineDash([]);
+    ctx.restore();
   }
 }
 
@@ -536,44 +551,53 @@ cropConfirm.addEventListener("click", () => {
     ctx.putImageData(imageData, 0, 0);
   }
 
+  let didCrop = false;
   if (cropStart && cropEnd) {
     const x = Math.min(cropStart.x, cropEnd.x);
     const y = Math.min(cropStart.y, cropEnd.y);
     const w = Math.abs(cropEnd.x - cropStart.x);
     const h = Math.abs(cropEnd.y - cropStart.y);
     if (w > 0 && h > 0) {
+      // Crop the image from cropTargetCanvas, do NOT include the crop rectangle
       const temp = document.createElement("canvas");
       temp.width = w;
       temp.height = h;
       temp.getContext("2d").drawImage(cropTargetCanvas, x, y, w, h, 0, 0, w, h);
       cropTargetCanvas.width = w;
       cropTargetCanvas.height = h;
+      cropTargetCanvas.getContext("2d").clearRect(0, 0, w, h);
       cropTargetCanvas.getContext("2d").drawImage(temp, 0, 0);
+      // Also update the original preview canvas if present
+      if (cropTargetCanvas._previewCanvasToUpdate && cropTargetCanvas._previewCanvasToUpdate !== cropTargetCanvas) {
+        cropTargetCanvas._previewCanvasToUpdate.width = w;
+        cropTargetCanvas._previewCanvasToUpdate.height = h;
+        cropTargetCanvas._previewCanvasToUpdate.getContext("2d").clearRect(0, 0, w, h);
+        cropTargetCanvas._previewCanvasToUpdate.getContext("2d").drawImage(temp, 0, 0);
+      }
+      didCrop = true;
     }
   }
-
-  // --- Always update main canvas with crop overlay ---
-  cropTargetCanvas.width = cropCanvas.width;
-  cropTargetCanvas.height = cropCanvas.height;
-  cropTargetCanvas.getContext("2d").clearRect(0, 0, cropTargetCanvas.width, cropTargetCanvas.height);
-  cropTargetCanvas.getContext("2d").drawImage(cropCanvas, 0, 0);
-  // Add AI tag only if upscaled in crop modal
-  if (
-    cropTargetCanvas &&
-    cropTargetCanvas.parentElement &&
-    cropCanvas.width > 0 &&
-    cropCanvas.height > 0 &&
-    cropCanvas.dataset.aiUpscaled === 'true'
-  ) {
-    // Only add if not already present
-    if (!cropTargetCanvas.parentElement.querySelector('.ai-tag')) {
-      const aiTag = document.createElement('div');
-      aiTag.className = 'ai-tag';
-      aiTag.textContent = 'AI';
-      cropTargetCanvas.parentElement.appendChild(aiTag);
-    }
-    // Reset flag so tag is not added again unless upscaled again
-    delete cropCanvas.dataset.aiUpscaled;
+  // If no crop was performed, just update the preview canvas with the upscaled image
+  if (!didCrop && cropTargetCanvas._previewCanvasToUpdate && cropTargetCanvas._previewCanvasToUpdate !== cropTargetCanvas) {
+    cropTargetCanvas._previewCanvasToUpdate.width = cropTargetCanvas.width;
+    cropTargetCanvas._previewCanvasToUpdate.height = cropTargetCanvas.height;
+    cropTargetCanvas._previewCanvasToUpdate.getContext("2d").clearRect(0, 0, cropTargetCanvas.width, cropTargetCanvas.height);
+    cropTargetCanvas._previewCanvasToUpdate.getContext("2d").drawImage(cropTargetCanvas, 0, 0);
+  }
+  // Transfer AI upscaled flag from cropCanvas to cropTargetCanvas and preview canvas
+  const previewCanvas = cropTargetCanvas._previewCanvasToUpdate || cropTargetCanvas;
+  if (cropCanvas.dataset.aiUpscaled === 'true') {
+    cropTargetCanvas.setAttribute('data-ai-upscaled', 'true');
+    previewCanvas.setAttribute('data-ai-upscaled', 'true');
+  } else {
+    cropTargetCanvas.removeAttribute('data-ai-upscaled');
+    previewCanvas.removeAttribute('data-ai-upscaled');
+  }
+  if (cropTargetCanvas && cropTargetCanvas.parentElement) {
+    updateAITag(cropTargetCanvas.parentElement, cropTargetCanvas);
+  }
+  if (previewCanvas && previewCanvas.parentElement && previewCanvas !== cropTargetCanvas) {
+    updateAITag(previewCanvas.parentElement, previewCanvas);
   }
   cropOverlay.classList.add("hidden");
 });
@@ -622,6 +646,21 @@ if (cropUpscaleBtn) {
         if (cropRes) {
           cropRes.textContent = `Resolution: ${cropCanvas.width} x ${cropCanvas.height}`;
         }
+        // Refresh crop overlay with new upscaled image
+        setTimeout(() => {
+          const upscaledImg = new window.Image();
+          upscaledImg.onload = function() {
+            // Create a new canvas from the upscaled image
+            const newCanvas = document.createElement('canvas');
+            newCanvas.width = upscaledImg.width;
+            newCanvas.height = upscaledImg.height;
+            newCanvas.getContext('2d').drawImage(upscaledImg, 0, 0);
+            // Preserve reference to original preview canvas
+            newCanvas._previewCanvasToUpdate = cropTargetCanvas._previewCanvasToUpdate || cropTargetCanvas;
+            openCropOverlay(newCanvas, newCanvas._previewCanvasToUpdate);
+          };
+          upscaledImg.src = cropCanvas.toDataURL('image/png');
+        }, 100);
       } else {
         cropOverlayProgress.textContent = 'Upscaling failed: ' + result.error;
         cropOverlayProgress.classList.remove('crop-overlay-progress-active');
@@ -745,12 +784,8 @@ if (upscaleBtn) {
           upscaledImg.src = 'file://' + result.outputPath + '?t=' + Date.now();
         });
             currentIndex++; // Increment currentIndex after successful upscale
-        if (container && !container.querySelector('.ai-tag')) {
-          const aiTag = document.createElement('div');
-          aiTag.className = 'ai-tag';
-          aiTag.textContent = 'AI';
-          container.appendChild(aiTag);
-        }
+            canvas.setAttribute('data-ai-upscaled', 'true');
+            updateAITag(container, canvas);
       } else {
         alert('Upscaling failed for image ' + (i+1) + ': ' + result.error);
       }
@@ -772,6 +807,20 @@ if (upscaleBtn) {
       }
     }, 1200);
   });
+}
+
+function updateAITag(container, canvas) {
+  const aiTag = container.querySelector('.ai-tag');
+  if (canvas.getAttribute('data-ai-upscaled') === 'true') {
+    if (!aiTag) {
+      const tag = document.createElement('div');
+      tag.className = 'ai-tag';
+      tag.textContent = 'AI';
+      container.appendChild(tag);
+    }
+  } else {
+    if (aiTag) aiTag.remove();
+  }
 }
 
 // --- End Crop Functionality ---
