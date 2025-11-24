@@ -363,6 +363,29 @@ downloadBtn.addEventListener("click", async () => {
   }
 });
 
+//Bw toggle for crop modal
+const bwToggleBtn = document.getElementById('bw-toggle');
+let cropBWActive = false;
+
+function applyGrayscale(canvas) {
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const y = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    data[i] = data[i + 1] = data[i + 2] = y;
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+if (bwToggleBtn) {
+  bwToggleBtn.addEventListener('click', () => {
+    cropBWActive = !cropBWActive;
+    // bwToggleBtn.textContent = cropBWActive ? 'Color' : 'Black & White';
+    drawCropRect();
+  });
+}
+
 // --- Crop Functionality ---
 let cropTargetCanvas = null;
 let cropStart = null;
@@ -394,6 +417,8 @@ function openCropOverlay(canvas, previewCanvasToUpdate) {
   cropTargetCanvas._previewCanvasToUpdate = previewCanvasToUpdate || canvas;
   cropStart = null;
   cropEnd = null;
+  cropBWActive = false;
+  if (bwToggleBtn) bwToggleBtn.textContent = 'Black & White';
   cropOverlay.classList.remove("hidden");
   cropCanvas.width = canvas.width;
   cropCanvas.height = canvas.height;
@@ -487,6 +512,10 @@ function drawCropRect() {
     }
     ctx.putImageData(imageData, 0, 0);
   }
+  // Apply grayscale if BW is active
+  if (cropBWActive) {
+    applyGrayscale(cropCanvas);
+  }
   // Draw crop rectangle as a guide only (not part of saved image)
   if (cropStart && cropEnd) {
     // Dynamic line width based on canvas size
@@ -550,6 +579,10 @@ cropConfirm.addEventListener("click", () => {
     }
     ctx.putImageData(imageData, 0, 0);
   }
+  // Apply grayscale if BW is active
+  if (cropBWActive) {
+    applyGrayscale(cropTargetCanvas);
+  }
 
   let didCrop = false;
   if (cropStart && cropEnd) {
@@ -584,20 +617,27 @@ cropConfirm.addEventListener("click", () => {
     cropTargetCanvas._previewCanvasToUpdate.getContext("2d").clearRect(0, 0, cropTargetCanvas.width, cropTargetCanvas.height);
     cropTargetCanvas._previewCanvasToUpdate.getContext("2d").drawImage(cropTargetCanvas, 0, 0);
   }
-  // Transfer AI upscaled flag from cropCanvas to cropTargetCanvas and preview canvas
+  // Only update AI tag if upscaled
   const previewCanvas = cropTargetCanvas._previewCanvasToUpdate || cropTargetCanvas;
-  if (cropCanvas.dataset.aiUpscaled === 'true') {
+  const wasUpscaled = cropCanvas.dataset.aiUpscaled === 'true';
+  if (wasUpscaled) {
     cropTargetCanvas.setAttribute('data-ai-upscaled', 'true');
     previewCanvas.setAttribute('data-ai-upscaled', 'true');
+    if (cropTargetCanvas && cropTargetCanvas.parentElement) {
+      updateAITag(cropTargetCanvas.parentElement, cropTargetCanvas);
+    }
+    if (previewCanvas && previewCanvas.parentElement && previewCanvas !== cropTargetCanvas) {
+      updateAITag(previewCanvas.parentElement, previewCanvas);
+    }
   } else {
     cropTargetCanvas.removeAttribute('data-ai-upscaled');
     previewCanvas.removeAttribute('data-ai-upscaled');
-  }
-  if (cropTargetCanvas && cropTargetCanvas.parentElement) {
-    updateAITag(cropTargetCanvas.parentElement, cropTargetCanvas);
-  }
-  if (previewCanvas && previewCanvas.parentElement && previewCanvas !== cropTargetCanvas) {
-    updateAITag(previewCanvas.parentElement, previewCanvas);
+    if (cropTargetCanvas && cropTargetCanvas.parentElement) {
+      updateAITag(cropTargetCanvas.parentElement, cropTargetCanvas);
+    }
+    if (previewCanvas && previewCanvas.parentElement && previewCanvas !== cropTargetCanvas) {
+      updateAITag(previewCanvas.parentElement, previewCanvas);
+    }
   }
   cropOverlay.classList.add("hidden");
 });
