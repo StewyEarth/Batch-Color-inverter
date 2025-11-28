@@ -29,6 +29,27 @@ body {
   justify-content: center;
   min-height: 100vh;
 }
+h3{
+  margin: 0 auto;
+  display: block;
+  width: fit-content;
+  font-size: 1.2em;
+  font-weight: 600; 
+}
+.centeredText{
+  text-align: center;
+  margin: .5em auto;
+  width: fit-content;
+}
+#gif-preview {
+    max-width: 300px;
+  display: block;
+  margin: .5em auto;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-top: 12px;
+}
 
 /* Modal resolution display */
 .modal-resolution {
@@ -57,8 +78,17 @@ body {
   letter-spacing: 0.5px;
   box-shadow: 0 1px 6px rgba(0,0,0,0.13);
 }
+#gif-progress{
+  display: inline;
+  margin-top: 12px;
+  font-size: 1.05em;
+  color: #444;
+  font-family: inherit;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
 /* Disabled button style */
-.btn-disabled,
+.btn-disabled,#gifDownloadLink:disabled,
 button:disabled {
   cursor: not-allowed !important;
   opacity: 0.6;
@@ -161,7 +191,7 @@ body {
 }
 
 /* Buttons */
-button {
+button,#gifDownloadLink{
   padding: 10px 20px;
   margin: 10px;
   border: none;
@@ -172,12 +202,17 @@ button {
   cursor: pointer;
   transition: background-color 0.3s;
 }
+#gifDownloadLink {
+    display: block;
+    margin: 0 auto;
+    width: fit-content;
+}
 
-button:hover {
+button:hover,#gifDownloadLink:hover {
   background-color: #0056b3;
 }
 
-button.hidden {
+button.hidden,#gifDownloadLink.hidden {
   display: none;
 }
 

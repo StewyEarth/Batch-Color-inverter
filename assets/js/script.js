@@ -26,8 +26,12 @@ const whitepointValue = document.getElementById("whitepoint-value");
 const cropUpscaleBtn = document.getElementById('crop-upscale');
 const startProcessingBtn = document.getElementById('start-processing-btn');
 const pendingImageCount = document.getElementById('pending-image-count');
+const gifProgress = document.getElementById('gif-progress');
+const gifDownloadLink = document.getElementById('gifDownloadLink');
 let pendingFiles = [];
+const gifSizeInfo = document.getElementById('gif-size-info');
 const modal = document.getElementById('image-modal');
+const gifCreationSection = document.getElementById("gif-creation-section");
 document.addEventListener('keydown', (e) => {
   // ESC closes crop modal and image modal
   if (e.key === 'Escape') {
@@ -309,6 +313,11 @@ clearBtn.addEventListener("click", () => {
   document.querySelectorAll(".crop-btn").forEach((btn) => {
     btn.remove();
   });
+  gifSizeInfo.classList.add('hidden');
+  gifCreationSection.classList.add("hidden");
+  gifProgress.classList.add("hidden");
+  gifDownloadLink.classList.add("hidden");
+  document.getElementById('gifPreview').classList.add("hidden"); //Hide GIF preview
   controlButtons.classList.add("hidden");
   disclaimer.classList.remove("hidden");
   renameFilesLabel.classList.add("hidden");
@@ -424,7 +433,6 @@ function openCropOverlay(canvas, previewCanvasToUpdate) {
   cropCanvas.height = canvas.height;
   const ctx = cropCanvas.getContext("2d");
   // Debug: log canvas dimensions and check for blank
-  console.log("[Crop Modal] Source canvas size:", canvas.width, canvas.height);
   // Force clear and redraw
   ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
   ctx.drawImage(canvas, 0, 0, cropCanvas.width, cropCanvas.height);
@@ -470,7 +478,6 @@ cropCanvas.addEventListener("mousemove", (e) => {
 
 cropCanvas.addEventListener("mouseup", () => {
   if (isCropping) {
-    console.log("Mouse up");
     isCropping = false;
     if (cropStart && cropEnd) {
       drawCropRect();
@@ -850,7 +857,7 @@ if (upscaleBtn) {
 }
 // Show/hide GIF creation section
 document.getElementById('makeGifBtn').addEventListener('click', function() {
-  document.getElementById('gif-creation-section').classList.toggle('hidden');
+  gifCreationSection.classList.remove('hidden');
 });
 
 // Create GIF from canvases
@@ -861,9 +868,8 @@ document.getElementById('createGifBtn').addEventListener('click', function() {
     return;
   }
   const frameDuration = Math.round((parseFloat(document.getElementById('frameDurationInput').value) || 0.2) * 1000);
-  const gifProgress = document.getElementById('gif-progress');
   const gifPreview = document.getElementById('gifPreview');
-  const gifDownloadLink = document.getElementById('gifDownloadLink');
+  gifProgress.classList.remove('hidden');
   gifProgress.textContent = 'Processing...';
   gifPreview.classList.add('hidden');
   gifDownloadLink.classList.add('hidden');
@@ -883,11 +889,17 @@ document.getElementById('createGifBtn').addEventListener('click', function() {
   });
   gif.on('finished', function(blob) {
     const url = URL.createObjectURL(blob);
+    const gifSizeBytes = blob.size;
+    const gifSizeKB = (gifSizeBytes / 1024).toFixed(2);
+    const gifSizeMB = (gifSizeBytes / (1024 * 1024)).toFixed(2);
+    gifSizeInfo.classList.remove('hidden');
+    gifSizeInfo.textContent = `GIF Size: ${gifSizeMB} MB`;
+    console.log('GIF size:', gifSizeBytes, 'bytes (', gifSizeKB, 'KB )');
     gifPreview.src = url;
     gifPreview.classList.remove('hidden');
     gifDownloadLink.href = url;
     gifDownloadLink.classList.remove('hidden');
-    gifProgress.textContent = 'Done!';
+    gifProgress.classList.add('hidden');
   });
   gif.on('error', function(e) {
     gifProgress.textContent = 'Error: ' + e;
@@ -918,4 +930,3 @@ document.getElementById("whitepoint-value").textContent = 255;
 
 // On load, hide filename options
 updateFilenameOptionsVisibility(false);
-console.log('window.GIF:', window.GIF);

@@ -17,7 +17,7 @@
       </label>
           <label id="invertColors-label">
               Invert colors
-              <input type="checkbox" id="invertColors-checkbox" checked>
+              <input type="checkbox" id="invertColors-checkbox">
           </label>
       <label id="transparentBackground-label">
         Use transparent background:
@@ -40,19 +40,6 @@
     <div id="import-progress-container" style="display:none;">
       <div id="import-progress-bar"></div>
     </div>
-      <button id="makeGifBtn" type="button" style="margin:1em 0;">Make GIF from images</button>
-      <!-- GIF Creation Section -->
-      <div id="gif-creation-section" class="hidden">
-        <h3>Create GIF from processed images</h3>
-        <label>
-          Frame duration (seconds):
-          <input type="number" id="frameDurationInput" min="0.05" max="5" step="0.05" value="0.2">
-        </label>
-        <button id="createGifBtn">Create GIF</button>
-        <div id="gif-progress"></div>
-        <img id="gifPreview" class="hidden" alt="GIF Preview" style="max-width: 300px; display: block; margin: 1em auto;">
-        <a id="gifDownloadLink" class="hidden" download="output.gif">Download GIF</a>
-      </div>
     <div id="filename-options">
       <label id="rename-files-label" class="hidden">
         <input type="checkbox" id="rename-files-checkbox">
@@ -73,14 +60,28 @@
         <button id="clear-btn">Clear/Reset</button>
         <button id="download-btn">Download all</button>
         <button id="upscale-btn">AI Upscale All</button>
+        <button id="makeGifBtn" type="button" style="margin:1em 0;">Make GIF from images</button>
         <div id="download-progress-container">
           <div id="download-progress-bar"></div>
         </div>
-        <div id="ai-upscale-progress-text" class="hidden">Upscaling 0/0</div>
+        <div id="ai-upscale-progress-text" class="hidden">Upscaling 0/1</div>
         <div id="ai-upscale-progress-container" class="hidden">
           <div id="ai-upscale-progress-bar"></div>
         </div>
     </div>
+        <!-- GIF Creation Section -->
+      <div id="gif-creation-section" class="hidden">
+        <h3>Create GIF from processed images</h3>
+        <label>
+          Frame duration (seconds):
+          <input type="number" id="frameDurationInput" min="0.05" max="5" step="0.05" value="0.5">
+        </label>
+        <button id="createGifBtn">Create GIF</button>
+        <p id="gif-progress"></p>
+        <img id="gifPreview" class="hidden" alt="GIF Preview" style="max-width: 300px; display: block; margin: 1em auto;">
+        <p id="gif-size-info" class="hidden disclaimer centeredText"></p>
+        <a id="gifDownloadLink" class="hidden" download="output.gif">Download GIF</a>
+      </div>
     <div id="image-modal" class="hidden">
       <div id="modal-content">
         <span id="close-modal">&times;</span>
