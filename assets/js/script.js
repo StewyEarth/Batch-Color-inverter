@@ -848,6 +848,52 @@ if (upscaleBtn) {
     }, 1200);
   });
 }
+// Show/hide GIF creation section
+document.getElementById('makeGifBtn').addEventListener('click', function() {
+  document.getElementById('gif-creation-section').classList.toggle('hidden');
+});
+
+// Create GIF from canvases
+document.getElementById('createGifBtn').addEventListener('click', function() {
+  const canvases = Array.from(document.querySelectorAll('.imagePreview'));
+  if (canvases.length === 0) {
+    alert('No images to create GIF from!');
+    return;
+  }
+  const frameDuration = Math.round((parseFloat(document.getElementById('frameDurationInput').value) || 0.2) * 1000);
+  const gifProgress = document.getElementById('gif-progress');
+  const gifPreview = document.getElementById('gifPreview');
+  const gifDownloadLink = document.getElementById('gifDownloadLink');
+  gifProgress.textContent = 'Processing...';
+  gifPreview.classList.add('hidden');
+  gifDownloadLink.classList.add('hidden');
+
+  const gif = new window.GIF({
+    workers: 2,
+    quality: 10,
+    workerScript: './assets/dependencies/gif.worker.js',
+    width: canvases[0].width,
+    height: canvases[0].height,
+  });
+  canvases.forEach(canvas => {
+    gif.addFrame(canvas, {delay: frameDuration});
+  });
+  gif.on('progress', function(p) {
+    gifProgress.textContent = 'Progress: ' + Math.round(p * 100) + '%';
+  });
+  gif.on('finished', function(blob) {
+    const url = URL.createObjectURL(blob);
+    gifPreview.src = url;
+    gifPreview.classList.remove('hidden');
+    gifDownloadLink.href = url;
+    gifDownloadLink.classList.remove('hidden');
+    gifProgress.textContent = 'Done!';
+  });
+  gif.on('error', function(e) {
+    gifProgress.textContent = 'Error: ' + e;
+  });
+  gif.render();
+});
 
 function updateAITag(container, canvas) {
   const aiTag = container.querySelector('.ai-tag');
@@ -872,3 +918,4 @@ document.getElementById("whitepoint-value").textContent = 255;
 
 // On load, hide filename options
 updateFilenameOptionsVisibility(false);
+console.log('window.GIF:', window.GIF);
