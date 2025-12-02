@@ -32,6 +32,13 @@ let pendingFiles = [];
 const gifSizeInfo = document.getElementById('gif-size-info');
 const modal = document.getElementById('image-modal');
 const gifCreationSection = document.getElementById("gif-creation-section");
+const qualityInput = document.getElementById("qualityInput");
+const aiUpscaleProgressContainer = document.getElementById('ai-upscale-progress-container');
+const aiUpscaleProgressBar = document.getElementById('ai-upscale-progress-bar');
+const aiUpscaleProgressText = document.getElementById('ai-upscale-progress-text');
+const gifSizeSelect = document.getElementById('gifSizeSelect');
+const gifTransparencyCheckbox = document.getElementById('gifTransparency');
+let gifTransparentColor = null;
 document.addEventListener('keydown', (e) => {
   // ESC closes crop modal and image modal
   if (e.key === 'Escape') {
@@ -259,9 +266,6 @@ function updatePendingImageCount() {
   if (pendingFiles.length === 0) {
     pendingImageCount.textContent = 'No images selected';
     startProcessingBtn.classList.add('hidden');
-  } else if (pendingFiles.length === 1) {
-    pendingImageCount.textContent = '1 image selected';
-    startProcessingBtn.classList.remove('hidden');
   } else {
     pendingImageCount.textContent = pendingFiles.length + ' images selected';
     startProcessingBtn.classList.remove('hidden');
@@ -777,9 +781,6 @@ modal.addEventListener("click", (e) => {
 
 // --- AI Upscale Functionality ---
 const upscaleBtn = document.getElementById('upscale-btn');
-const aiUpscaleProgressContainer = document.getElementById('ai-upscale-progress-container');
-const aiUpscaleProgressBar = document.getElementById('ai-upscale-progress-bar');
-const aiUpscaleProgressText = document.getElementById('ai-upscale-progress-text');
 if (upscaleBtn) {
   upscaleBtn.addEventListener('click', async () => {
     const canvases = document.querySelectorAll('.imagePreview');
@@ -860,6 +861,7 @@ document.getElementById('makeGifBtn').addEventListener('click', function() {
   gifCreationSection.classList.remove('hidden');
 });
 
+
 // Create GIF from canvases
 document.getElementById('createGifBtn').addEventListener('click', function() {
   const canvases = Array.from(document.querySelectorAll('.imagePreview'));
@@ -873,13 +875,46 @@ document.getElementById('createGifBtn').addEventListener('click', function() {
   gifProgress.textContent = 'Processing...';
   gifPreview.classList.add('hidden');
   gifDownloadLink.classList.add('hidden');
+  gifSizeInfo.classList.add('hidden');
+
+  if (gifSizeSelect.value === 'half') { 
+    // Resize canvases to half size for GIF
+    for (let i = 0; i < canvases.length; i++) {
+      const originalCanvas = canvases[i];
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = Math.floor(originalCanvas.width / 2);
+      tempCanvas.height = Math.floor(originalCanvas.height / 2);
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(originalCanvas, 0, 0, tempCanvas.width, tempCanvas.height);
+      canvases[i] = tempCanvas;
+    }
+  } else if (gifSizeSelect.value === 'quarter') {
+    // Resize canvases to quarter size for GIF
+    for (let i = 0; i < canvases.length; i++) {
+      const originalCanvas = canvases[i];
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = Math.floor(originalCanvas.width / 4);
+      tempCanvas.height = Math.floor(originalCanvas.height / 4);
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(originalCanvas, 0, 0, tempCanvas.width, tempCanvas.height);
+      canvases[i] = tempCanvas;
+    }
+  } // else keep original size
+  
+  gifTransparentColor = null;
+  if (gifTransparencyCheckbox.checked) { 
+    // Ensure transparent background is preserved
+    gifTransparentColor = "#ffffff00";
+  }
 
   const gif = new window.GIF({
     workers: 2,
-    quality: 10,
+    quality: parseInt(qualityInput.value) || 10,
     workerScript: './assets/dependencies/gif.worker.js',
     width: canvases[0].width,
     height: canvases[0].height,
+    dithering: "FalseFloydSteinberg",
+    transparent: gifTransparentColor,
   });
   canvases.forEach(canvas => {
     gif.addFrame(canvas, {delay: frameDuration});
@@ -890,16 +925,15 @@ document.getElementById('createGifBtn').addEventListener('click', function() {
   gif.on('finished', function(blob) {
     const url = URL.createObjectURL(blob);
     const gifSizeBytes = blob.size;
-    const gifSizeKB = (gifSizeBytes / 1024).toFixed(2);
     const gifSizeMB = (gifSizeBytes / (1024 * 1024)).toFixed(2);
     gifSizeInfo.classList.remove('hidden');
-    gifSizeInfo.textContent = `GIF Size: ${gifSizeMB} MB`;
-    console.log('GIF size:', gifSizeBytes, 'bytes (', gifSizeKB, 'KB )');
+    gifSizeInfo.textContent = `GIF Size: ${gifSizeMB} MB (${canvases[0].width} x ${canvases[0].height})`;
     gifPreview.src = url;
     gifPreview.classList.remove('hidden');
     gifDownloadLink.href = url;
     gifDownloadLink.classList.remove('hidden');
     gifProgress.classList.add('hidden');
+    document.location.href = "#gifDownloadLink";
   });
   gif.on('error', function(e) {
     gifProgress.textContent = 'Error: ' + e;

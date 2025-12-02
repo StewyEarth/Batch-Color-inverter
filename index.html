@@ -10,7 +10,7 @@
 </head>
 <body>
     <img src="assets/img/Logo.png" id="logo" alt="Batch Inverter Logo">
-        <div id="backgroundControls">
+        <div id="backgroundControls" class="multipleOptions">
         <label id="squareCanvas-label">
         Make images square
         <input type="checkbox" id="squareCanvas-checkbox">
@@ -34,7 +34,7 @@
     <input type="file" id="file-input" multiple accept="image/*" />
     </label>
     <div id="pending-image-count" class="disclaimer">No images selected</div>
-    <button id="start-processing-btn" class="hidden">Start Processing</button>
+    <button id="start-processing-btn" class="hidden normalBtn">Start Processing</button>
     <p id="disclaimer" class="disclaimer">Pictures are not uploaded or saved to any server; all processing is done locally on your device.</p>
     <div id="preview"></div>
     <div id="import-progress-container" style="display:none;">
@@ -57,10 +57,10 @@
       </label>
     </div>
     <div id="controlButtons" class="hidden">
-        <button id="clear-btn">Clear/Reset</button>
-        <button id="download-btn">Download all</button>
-        <button id="upscale-btn">AI Upscale All</button>
-        <button id="makeGifBtn" type="button" style="margin:1em 0;">Make GIF from images</button>
+        <button id="download-btn" class="normalBtn">Download all</button>
+        <button id="upscale-btn" class="normalBtn">AI Upscale All</button>
+        <button id="makeGifBtn" type="button" class="normalBtn">Make GIF from images</button>
+        <button id="clear-btn" class="cancelBtn">Clear/Reset</button>
         <div id="download-progress-container">
           <div id="download-progress-bar"></div>
         </div>
@@ -72,15 +72,36 @@
         <!-- GIF Creation Section -->
       <div id="gif-creation-section" class="hidden">
         <h3>Create GIF from processed images</h3>
+        <div class="multipleOptions">
         <label>
           Frame duration (seconds):
           <input type="number" id="frameDurationInput" min="0.05" max="5" step="0.05" value="0.5">
         </label>
-        <button id="createGifBtn">Create GIF</button>
-        <p id="gif-progress"></p>
-        <img id="gifPreview" class="hidden" alt="GIF Preview" style="max-width: 300px; display: block; margin: 1em auto;">
+        <label>
+          Quality (Lower is better):
+          <input type="number" id="qualityInput" min="1" max="50" step="1" value="10">
+        </label>
+        <label for="gifSizeSelect">
+          Gif Size:
+          <select name="" id="gifSizeSelect">
+            <option value="full">Full Size</option>
+            <option value="half">Half Size</option>
+            <option value="quarter">Quarter Size</option>
+          </select>
+        </label>
+        <label for="gifTransparency">
+          Use transparency:
+          <input type="checkbox" id="gifTransparency">
+        </label>
+        </div>
+        <img id="gifPreview" class="hidden" alt="GIF Preview" />
         <p id="gif-size-info" class="hidden disclaimer centeredText"></p>
-        <a id="gifDownloadLink" class="hidden" download="output.gif">Download GIF</a>
+        <a id="gifDownloadLink" class="hidden normalBtn" download="output.gif">Download GIF</a>
+        <div class="gifCreatorBtn">
+        <button id="createGifBtn" class="normalBtn">Create GIF</button>
+        <p id="gif-progress"></p>
+        </div>
+
       </div>
     <div id="image-modal" class="hidden">
       <div id="modal-content">
@@ -96,10 +117,10 @@
         <div id="crop-resolution" class="crop-resolution">Resolution: </div>
         <canvas id="crop-canvas"></canvas>
         <div id="crop-controls">
-          <button id="crop-confirm">Crop/Save</button>
-          <button id="crop-cancel">Cancel</button>
-          <button id="crop-upscale">AI Upscale (4x res)</button>
-          <button id="bw-toggle">Black & White</button>
+          <button id="crop-confirm" class="normalBtn">Crop/Save</button>
+          <button id="crop-upscale" class="normalBtn">AI Upscale (4x res)</button>
+          <button id="bw-toggle" class="normalBtn">Black & White</button>
+          <button id="crop-cancel" class="cancelBtn">Cancel</button>
         </div>
         <div id="crop-level-controls">
           <label>
@@ -116,7 +137,7 @@
       </div>
     </div>
     <footer id="footer-credit">
-      &copy; Made by Scoopdewoo. AI upscaling using <a href="https://github.com/xinntao/Real-ESRGAN" class="modern-link">Real-ESGAN</a>
+      &copy; Made by Scoopdewoo. AI upscaling using <a href="https://github.com/xinntao/Real-ESRGAN" class="modern-link">Real-ESGAN</a> Gif creation using <a href="https://github.com/jnordberg/gif.js/" class="modern-link">gif.js</a>.
     </footer>
 </body>
   <script src="assets/dependencies/gif.js"></script>
