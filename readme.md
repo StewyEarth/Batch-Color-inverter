@@ -21,3 +21,4 @@ The latest release can be found in the releases section or be downloaded by clic
 - Changing color of background on transparent pngs (on import)
 - Making Images square even if they werent already
 - Black And white option to turn colored image black and white
+- Gif creation
