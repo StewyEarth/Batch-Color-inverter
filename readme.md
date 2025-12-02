@@ -3,7 +3,7 @@ This is a little project of mine to quickly invert the colors a bunch of images 
 - 100% free
 - No uploads. no limits, everything stays on your computer
 # Preview
-![Image of the program](https://i.imgur.com/l68fiA9.png)
+![Image of the program](https://raw.githubusercontent.com/StewyEarth/Batch-Color-inverter/refs/heads/master/github/images/preview.png)
 # Download & Install
 The latest release can be found in the releases section or be downloaded by clicking [Here](https://github.com/StewyEarth/Batch-Color-inverter/releases/latest/download/batch-color-inverter-win32-x64.zip)
 - Unzip file
