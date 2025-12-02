@@ -1,6 +1,6 @@
 # Info
 This is a little project of mine to quickly invert the colors a bunch of images at once. The code is messy and not well focused on performance, but it works the way I need to at the moment. Maybe in the future I'll come back and improve it
-- 100% free
+- 100% free & 100% offline (doesn't rely on internet connection for anything)
 - No uploads. no limits, everything stays on your computer
 # Preview
 ![Image of the program](https://raw.githubusercontent.com/StewyEarth/Batch-Color-inverter/refs/heads/master/github/images/preview.png)
@@ -20,8 +20,8 @@ The latest release can be found in the releases section or be downloaded by clic
 - All processing is local (no uploads)
 - Changing color of background on transparent pngs (on import)
 - Making Images square even if they werent already
-- Black And white option to turn colored image black and white
-- Gif creation
+- Option to turn colored image black and white
+- Gif creation, Using processed images
 # Credits
 - Gif creation using [Gif.js](https://github.com/jnordberg/gif.js) [The MIT License (MIT)](https://github.com/jnordberg/gif.js?tab=MIT-1-ov-file)
 - AI upscale using [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) [BSD 3-Clause License](https://github.com/xinntao/Real-ESRGAN?tab=BSD-3-Clause-1-ov-file)
