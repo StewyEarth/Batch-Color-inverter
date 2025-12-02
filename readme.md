@@ -23,5 +23,5 @@ The latest release can be found in the releases section or be downloaded by clic
 - Black And white option to turn colored image black and white
 - Gif creation
 # Credits
-Gif creation using [Gif.js](https://github.com/jnordberg/gif.js) [The MIT License (MIT)](https://github.com/jnordberg/gif.js?tab=MIT-1-ov-file)
-AI upscale using [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) [BSD 3-Clause License](https://github.com/xinntao/Real-ESRGAN?tab=BSD-3-Clause-1-ov-file)
+- Gif creation using [Gif.js](https://github.com/jnordberg/gif.js) [The MIT License (MIT)](https://github.com/jnordberg/gif.js?tab=MIT-1-ov-file)
+- AI upscale using [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) [BSD 3-Clause License](https://github.com/xinntao/Real-ESRGAN?tab=BSD-3-Clause-1-ov-file)
