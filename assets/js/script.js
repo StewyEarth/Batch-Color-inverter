@@ -149,6 +149,14 @@ function createSquareCanvasFromImage(img, bgcolorPicker, transparentCheckbox, in
   return canvas;
 }
 
+function naturalSortContainers(containers) {
+  return containers.sort((a, b) => {
+    const aName = a.querySelector('canvas').dataset.filename || '';
+    const bName = b.querySelector('canvas').dataset.filename || '';
+    return aName.localeCompare(bName, undefined, { numeric: true, sensitivity: 'base' });
+  });
+}
+
 function displayImages(files) {
   const bgcolorPicker = document.getElementById("bgcolor-picker");
   const transparentBackgroundCheckbox = document.getElementById("transparentBackground-checkbox");
@@ -167,7 +175,7 @@ function displayImages(files) {
 
   let loadedCount = 0;
   const total = Array.from(files).filter(f => f.type.startsWith("image/")).length;
-  const containers = [];
+  let containers = [];
 
   for (const file of files) {
     if (file.type.startsWith("image/")) {
@@ -208,6 +216,7 @@ function displayImages(files) {
         loadedCount++;
         importProgressBar.style.width = ((loadedCount / total) * 100) + "%";
         containers.push(container);
+        containers = naturalSortContainers(containers);
         if (loadedCount === total) {
           // All images loaded, show them at once
           preview.innerHTML = "";
@@ -354,10 +363,16 @@ downloadBtn.addEventListener("click", async () => {
     for (let index = 0; index < canvases.length; index++) {
       const canvas = canvases[index];
       let filename;
+      let preNumber ="";
+      if (index < 10){
+        preNumber= "00";
+      }else if (index < 100){
+        preNumber= "0";
+      }
       if (renameFiles) {
         filename = useCustomPrefix
-          ? `${customPrefix}-${index + 1}.png`
-          : `image-${index + 1}.png`;
+          ? `${customPrefix}-${preNumber}${index + 1}.png`
+          : `image-${preNumber}${index + 1}.png`;
       } else {
         filename = canvas.dataset.filename || `image-${index + 1}.png`;
       }
