@@ -364,9 +364,9 @@ downloadBtn.addEventListener("click", async () => {
       const canvas = canvases[index];
       let filename;
       let preNumber ="";
-      if (index < 10){
+      if (index + 1 <= 9){
         preNumber= "00";
-      }else if (index < 100){
+      }else if (index + 1 <= 99){
         preNumber= "0";
       }
       if (renameFiles) {
